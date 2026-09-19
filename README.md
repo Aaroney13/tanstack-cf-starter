@@ -9,6 +9,8 @@ pnpm db:seed                # create BetterAuth tables in Neon (idempotent)
 pnpm dev                    # → http://localhost:3000
 ```
 
+`/dashboard` (`src/routes/_authed/dashboard.tsx`) is the example guarded route: it reads the session from the `_authed` layout's route context, and signed-out visitors are redirected to `/`.
+
 Before deploying:
 1. `pnpm wrangler kv namespace create CONFIG_KV` → paste id into `wrangler.jsonc`
 2. `pnpm wrangler r2 bucket create starter-images`
