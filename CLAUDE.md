@@ -46,7 +46,8 @@ export const myFn = createServerFn({ method: 'POST' })
 
 File-based via TanStack Router in `src/routes/`:
 - `__root.tsx` — HTML shell + `<Outlet />`
-- `_authed.tsx` — auth guard (uses `beforeLoad` + `redirect`)
+- `_authed.tsx` — auth guard (uses `beforeLoad` + `redirect`; fails closed and logs if the session lookup throws)
+- `api/auth/$.ts` — BetterAuth HTTP handler (`GET`/`POST` → `getAuth().handler(request)`)
 - Use route `loader` for SSR prefetching, NOT `useEffect`.
 - Use `beforeLoad` for auth checks.
 
@@ -77,6 +78,7 @@ After adding/removing route files, run `pnpm dev` once to regenerate `src/routeT
 - `wrangler.dev.jsonc` — dev (`workers_dev: true`, `-dev` suffixed bindings)
 - Selected via `WRANGLER_CONFIG=dev` env var in `vite.config.ts` and `package.json` deploy scripts.
 - Secrets go through `wrangler secret put NAME` (and `... -c wrangler.dev.jsonc` for dev). Never commit them.
+- `BETTER_AUTH_URL` must equal the origin the browser uses, or BetterAuth rejects cookie-bearing POSTs with 403 `INVALID_ORIGIN`. Local dev: `http://localhost:3000` in `.dev.vars` (overrides `vars`). Deployed: set it in each wrangler config's `vars`.
 
 ## Tailwind v4
 

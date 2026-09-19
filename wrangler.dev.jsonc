@@ -31,8 +31,10 @@
       }
     ]
   },
+  // BETTER_AUTH_URL here is for the deployed dev Worker (`pnpm deploy:dev`).
+  // Local `pnpm dev` reads it from .dev.vars instead.
   "vars": {
-    "BETTER_AUTH_URL": "http://127.0.0.1:3000"
+    "BETTER_AUTH_URL": "https://tanstack-cf-starter-dev.YOUR_SUBDOMAIN.workers.dev"
   },
   "r2_buckets": [
     { "binding": "IMAGES_BUCKET", "bucket_name": "starter-images-dev" }

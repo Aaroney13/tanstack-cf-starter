@@ -3,13 +3,20 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { getAuth } from '@/lib/auth.server'
 
-// Auth guard. Wire `getAuth()` to a real BetterAuth config before relying on this.
+// Auth guard: children only render with a valid BetterAuth session;
+// everyone else is redirected to `/`.
 const getSession = createServerFn({ method: 'GET' }).handler(async () => {
   const cookie = getRequestHeader('cookie') || ''
   if (!cookie.includes('better-auth.session_token')) return null
-  const auth = getAuth()
-  const session = await auth.api.getSession({ headers: new Headers({ cookie }) })
-  return session?.user ? session : null
+  try {
+    const session = await getAuth().api.getSession({ headers: new Headers({ cookie }) })
+    return session?.user ? session : null
+  } catch (error) {
+    // Missing secrets, DB unreachable, etc. Fail closed (redirect) but keep
+    // the cause in the server log.
+    console.error('[_authed] session lookup failed:', error)
+    return null
+  }
 })
 
 export const Route = createFileRoute('/_authed')({
