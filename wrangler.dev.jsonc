@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tanstack-cf-starter-dev",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "no_handle_cross_request_promise_resolution"
+  ],
+  "main": "./src/entry-server.ts",
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "queues": {
+    "producers": [
+      { "binding": "MAIL_QUEUE", "queue": "starter-mail-queue-dev" },
+      { "binding": "USAGE_QUEUE", "queue": "starter-usage-queue-dev" }
+    ],
+    "consumers": [
+      {
+        "queue": "starter-mail-queue-dev",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "starter-mail-queue-dev-dlq"
+      },
+      {
+        "queue": "starter-usage-queue-dev",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "starter-usage-queue-dev-dlq"
+      }
+    ]
+  },
+  "vars": {
+    "BETTER_AUTH_URL": "http://127.0.0.1:3000"
+  },
+  "r2_buckets": [
+    { "binding": "IMAGES_BUCKET", "bucket_name": "starter-images-dev" }
+  ],
+  "browser": { "binding": "BROWSER" },
+  "kv_namespaces": [
+    { "binding": "CONFIG_KV", "id": "REPLACE_ME_DEV" }
+  ],
+  "ratelimits": [
+    { "name": "AI_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }
+  ]
+}

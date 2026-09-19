@@ -1,0 +1,45 @@
+{
+  "name": "tanstack-cf-starter",
+  "private": true,
+  "packageManager": "pnpm@10.22.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy:dev": "WRANGLER_CONFIG=dev pnpm build && wrangler deploy -c dist/server/wrangler.json",
+    "deploy:prod": "pnpm build && wrangler deploy -c dist/server/wrangler.json",
+    "cf-typegen": "wrangler types",
+    "db:seed": "tsx scripts/db-seed.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "@tailwindcss/vite": "^4.0.6",
+    "@tanstack/react-router": "^1.159.5",
+    "@tanstack/react-start": "^1.159.5",
+    "@tanstack/router-plugin": "^1.159.5",
+    "better-auth": "^1.4.18",
+    "kysely": "^0.28.10",
+    "kysely-neon": "^2.0.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.0.6",
+    "vite-tsconfig-paths": "^6.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.23.1",
+    "@cloudflare/workers-types": "^4.20260205.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "jsdom": "^27.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.7.2",
+    "vite": "^7.1.7",
+    "vitest": "^3.0.5",
+    "wrangler": "^4.63.0"
+  }
+}
