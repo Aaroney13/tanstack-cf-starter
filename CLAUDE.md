@@ -12,14 +12,15 @@ pnpm deploy:dev       # Build + deploy via wrangler.dev.jsonc
 pnpm deploy:prod      # Build + deploy via wrangler.jsonc
 pnpm cf-typegen       # Regenerate worker-configuration.d.ts from wrangler bindings
 pnpm dlx shadcn@latest add <component>     # Add shadcn/ui (after enabling)
-pnpm db:seed          # Create/update BetterAuth tables in Neon (--dry-run prints SQL)
+pnpm db:migrate       # Apply Kysely migrations (src/db/migrations/) to Neon + verify BetterAuth schema
+pnpm db:seed          # db:migrate, then create the SEED_USER_* login if set
 ```
 
 ## Stack
 
 - **TanStack Start** (React 19 SSR) on **Cloudflare Workers**
 - **Neon Postgres** via **Kysely** (`src/db/server.ts` → `getDb()`)
-- **BetterAuth** (per-request factory in `src/lib/auth.server.ts`)
+- **BetterAuth** on the same Kysely client (per-request factory in `src/lib/auth.server.ts`)
 - **Tailwind CSS v4** — CSS-first, no `tailwind.config.js`
 - **Vitest** + jsdom for tests
 
@@ -53,12 +54,22 @@ After adding/removing route files, run `pnpm dev` once to regenerate `src/routeT
 
 ## Database
 
-- `getDb()` returns a Kysely client backed by Neon's HTTP driver. Sync, cheap, one fetch per query.
-- `withTransaction(cb)` opens a one-shot WebSocket `Pool({ max: 1 })` for the duration of the callback. Use this ONLY when you need real BEGIN/COMMIT atomicity — single-statement guards (`UPDATE ... WHERE balance >= ?`) are already atomic.
+- `getDb()` returns a Kysely client backed by Neon's HTTP driver. Sync, cheap, one fetch per query. No interactive transactions.
+- `createPoolDb()` returns Kysely over a Neon WebSocket `Pool({ max: 1 })`: real transactions, but the caller must `await db.destroy()` (within the same request on Workers).
+- `withTransaction(cb)` wraps `createPoolDb()` for one BEGIN/COMMIT. Use it ONLY when you need atomicity across statements — single-statement guards (`UPDATE ... WHERE balance >= ?`) are already atomic.
 - Schema types live in `src/db/types.ts`. Add new tables there.
-- Plain SQL migrations live in `src/db/migrations/` (apply manually via `psql` or your tool of choice).
-- BetterAuth tables (`user`, `session`, `account`, `verification`) are NOT in `migrations/`. `pnpm db:seed` (`scripts/db-seed.ts`) diffs the live DB against `getAuth()`'s config and applies additive changes. Re-run it after adding a BetterAuth plugin, and mirror any new tables you query in `types.ts`. It reads env from real env vars > `.dev.vars` > `.env`, so target prod with `DATABASE_URL=... pnpm db:seed`. `SEED_USER_EMAIL` + `SEED_USER_PASSWORD` also seed a verified login.
-- Don't use `@better-auth/cli migrate`: there's no static `auth` export for it to load, and env comes from `__cfEnv`.
+
+### Migrations
+
+- Kysely migrations in `src/db/migrations/NNNN_name.ts`, each exporting `up(db)` / `down(db)`. `pnpm db:migrate` (`scripts/db.ts`) applies pending ones via Kysely's `Migrator` over `createPoolDb()`; state lives in `kysely_migration`. Never edit an applied migration — add a new one.
+- `0001_better_auth.ts` creates BetterAuth's `user` / `session` / `account` / `verification` tables (camelCase columns, text ids).
+- After migrating, `db:migrate` asks BetterAuth to diff the DB against `getAuth()`'s config. If you add a BetterAuth plugin, it fails and prints the SQL BetterAuth wants: put that in a new migration (`` sql`...`.execute(db) `` is fine) and mirror any tables you query in `types.ts`.
+- Env: real env vars > `.dev.vars` > `.env`. Target prod with `DATABASE_URL=... pnpm db:migrate`. `pnpm db:seed` also creates a verified login from `SEED_USER_EMAIL` + `SEED_USER_PASSWORD` (skipped if it exists).
+- Don't use `@better-auth/cli migrate` / `generate`: there's no static `auth` export for it to load, and env comes from `__cfEnv`.
+
+### BetterAuth + Kysely
+
+`getAuth()` passes `{ db: getDb(), type: 'postgres' }` to BetterAuth, so it runs on Neon HTTP with no per-request WebSocket. HTTP can't hold a transaction, so BetterAuth's multi-step writes (sign-up's user + account rows) run sequentially, not atomically. `getAuth(db)` accepts another Kysely client (scripts pass `createPoolDb()` or a transaction). The runtime schema check is off (`validateSchema: false`) because migrations own the schema and the factory runs per request.
 
 ## Wrangler dual-config
 
@@ -90,3 +101,4 @@ beforeEach(() => {
 - TS strict mode + `noUnusedLocals`/`noUnusedParameters` — prefix unused with `_`.
 - When extracting large JSX blocks, replace the whole block in one Edit call so closing tags don't orphan.
 - `routeTree.gen.ts` and `worker-configuration.d.ts` are generated — they're in `.gitignore`.
+- `_authed.tsx` is a pathless layout: it needs at least one child route (e.g. `_authed/dashboard.tsx`), or it collides with `index.tsx` at `/` and route generation fails.

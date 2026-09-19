@@ -1,15 +1,9 @@
-import type { ColumnType, Generated } from 'kysely'
+import type { ColumnType } from 'kysely'
 
-export interface UsersTable {
-  id: Generated<string>
-  email: string
-  name: string | null
-  created_at: ColumnType<Date, string | undefined, never>
-}
-
-// BetterAuth tables — created by `pnpm db:seed`, written by BetterAuth. Typed
-// here so app code can read/join them (e.g. FK to user.id). Columns are
-// camelCase. `account` and `verification` are internal and left out on purpose.
+// BetterAuth tables — created by migrations/0001_better_auth.ts, written by
+// BetterAuth. Typed here so app code can read/join them (e.g. FK to user.id).
+// Columns are camelCase. `account` and `verification` are internal and left
+// out on purpose. Add your own tables below with their own migrations.
 type Timestamp = ColumnType<Date, Date | string, Date | string>
 type DefaultTimestamp = ColumnType<Date, Date | string | undefined, Date | string>
 
@@ -35,7 +29,6 @@ export interface SessionTable {
 }
 
 export interface Database {
-  users: UsersTable
   user: UserTable
   session: SessionTable
 }

@@ -10,7 +10,8 @@
     "deploy:dev": "WRANGLER_CONFIG=dev pnpm build && wrangler deploy -c dist/server/wrangler.json",
     "deploy:prod": "pnpm build && wrangler deploy -c dist/server/wrangler.json",
     "cf-typegen": "wrangler types",
-    "db:seed": "tsx scripts/db-seed.ts",
+    "db:migrate": "tsx scripts/db.ts migrate",
+    "db:seed": "tsx scripts/db.ts seed",
     "test": "vitest run"
   },
   "dependencies": {

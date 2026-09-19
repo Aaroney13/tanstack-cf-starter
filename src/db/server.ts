@@ -34,6 +34,17 @@ export function getDb(): Kysely<Database> {
 }
 
 /**
+ * Kysely over a Neon WebSocket `Pool`, which (unlike `getDb()`) can hold a
+ * connection across statements for real transactions. The caller owns it and
+ * must `await db.destroy()` when done. On Workers, create and destroy it
+ * within the same request.
+ */
+export function createPoolDb(): Kysely<Database> {
+  const pool = new Pool({ connectionString: requireDatabaseUrl(), max: 1 })
+  return new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
+}
+
+/**
  * Run a callback inside a BEGIN/COMMIT transaction.
  *
  * `getDb()` uses Neon's HTTP driver (one fetch per query) which can't hold
@@ -42,11 +53,10 @@ export function getDb(): Kysely<Database> {
 export async function withTransaction<T>(
   callback: (trx: Transaction<Database>) => Promise<T>,
 ): Promise<T> {
-  const pool = new Pool({ connectionString: requireDatabaseUrl(), max: 1 })
+  const db = createPoolDb()
   try {
-    const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
     return await db.transaction().execute(callback)
   } finally {
-    await pool.end()
+    await db.destroy()
   }
 }

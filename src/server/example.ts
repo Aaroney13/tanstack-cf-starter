@@ -12,6 +12,6 @@ export const greet = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ name: z.string().min(1).max(100) }))
   .handler(async ({ data }) => {
     // const db = getDb()
-    // const user = await db.selectFrom('users').selectAll().executeTakeFirst()
+    // const user = await db.selectFrom('user').selectAll().executeTakeFirst()
     return { message: `Hello, ${data.name}` }
   })
